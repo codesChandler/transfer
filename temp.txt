@@ -1,0 +1,121 @@
+&Force internal ic_hit_f2,      // Icache hit, enables F2 address capture
+
+&Force internal ifc_fetch_addr_f1, // look up btb address
+&Force internal ifc_fetch_addr_f2, // to tgt calc
+&Force internal ifc_fetch_req_f1,  // F1 valid
+&Force internal ifc_fetch_req_f2,  // F2 valid
+
+&Force internal valid_tlu_br0_wb;
+&Force internal hist_tlu_br0_wb;
+&Force internal br_error_tlu_br0_wb;
+&Force internal br_start_error_tlu_br0_wb;
+&Force internal index_tlu_br0_wb;
+&Force internal bank_tlu_br0_wb;
+&Force internal fghr_tlu_br0_wb;
+`ifdef RV_BTB_48
+&Force internal way_tlu_br0_wb;
+`else
+&Force internal way_tlu_br0_wb;
+`endif
+&Force internal middle_tlu_br0_wb;
+
+&Force internal valid_tlu_br1_wb;
+&Force internal hist_tlu_br1_wb;
+&Force internal br_error_tlu_br1_wb;
+&Force internal br_start_error_tlu_br1_wb;
+&Force internal index_tlu_br1_wb;
+&Force internal bank_tlu_br1_wb;
+&Force internal fghr_tlu_br1_wb;
+`ifdef RV_BTB_48
+&Force internal way_tlu_br1_wb;
+`else
+&Force internal way_tlu_br1_wb;
+`endif
+&Force internal middle_tlu_br1_wb;
+
+   // input br_tlu_pkt_t dec_tlu_br0_wb_pkt, // BP commit update packet, includes errorscall_exu_mp
+   // input br_tlu_pkt_t dec_tlu_br1_wb_pkt, // BP commit update packet, includes errors
+
+&Force internal dec_tlu_flush_lower_wb, // used to move EX4 RS to EX1 and F
+&Force internal dec_tlu_flush_leak_one_wb, // don't hit for leak one fetches
+
+&Force internal dec_tlu_bpred_disable, // disable all branch prediction
+
+&Force internal        exu_i0_br_ret_e4, // EX4 ret stack update
+&Force internal        exu_i1_br_ret_e4, // EX4 ret stack update
+&Force internal        exu_i0_br_call_e4, // EX4 ret stack update
+&Force internal        exu_i1_br_call_e4, // EX4 ret stack update
+
+&Force internal misp_exu_mp;
+&Force internal ataken_exu_mp;
+&Force internal boffset_exu_mp;
+&Force internal pc4_exu_mp;
+&Force internal hist_exu_mp;
+&Force internal toffset_exu_mp;
+&Force internal index_exu_mp;
+&Force internal bank_exu_mp;
+   // input logic valid_exu_mp;
+   // input logic br_error_exu_mp;
+   // input logic br_start_error_exu_mp;
+   // input logic [31:1] prett_exu_mp;
+&Force internal pcall_exu_mp;
+&Force internal pret_exu_mp;
+&Force internal pja_exu_mp;
+&Force internal btag_exu_mp;
+&Force internal fghr_exu_mp;
+`ifdef RV_BTB_48
+&Force internal way_exu_mp;
+`else
+&Force internal way_exu_mp;
+`endif
+
+
+   // input predict_pkt_t  exu_mp_pkt, // mispredict packet
+&Force internal pc0_call_exu_rets_e1;
+&Force internal pc0_ret_exu_rets_e1;
+&Force internal pc0_pc4_exu_rets_e1;
+&Force internal pc1_call_exu_rets_e1;
+&Force internal pc1_ret_exu_rets_e1;
+&Force internal pc1_pc4_exu_rets_e1;
+
+&Force internal pc0_call_exu_rets_e4;
+&Force internal pc0_ret_exu_rets_e4;
+&Force internal pc0_pc4_exu_rets_e4;
+&Force internal pc1_call_exu_rets_e4;
+&Force internal pc1_ret_exu_rets_e4;
+&Force internal pc1_pc4_exu_rets_e4;
+
+
+   // input rets_pkt_t exu_rets_e1_pkt, // EX1 rets packet
+   // input rets_pkt_t exu_rets_e4_pkt, // EX4 rets packet
+
+`ifdef REAL_COMM_RS
+&Force internal exu_i0_pc_e1, // Used for RS computation
+&Force internal exu_i1_pc_e1, // Used for RS computation
+&Force internal dec_tlu_i0_pc_e4,  // Used for RS computation
+&Force internal dec_tlu_i1_pc_e4,  // Used for RS computation
+`endif
+
+&Force internal exu_mp_eghr, // execute ghr (for patching fghr)
+
+&Force internal exu_flush_final, // all flushes
+&Force internal exu_flush_upper_e2, // flush upper, either i0 or i1, cp EX1 RS to F RS
+
+&Force dangle ifu_bp_btb_target_f2, //  predicted target PC
+&Force dangle ifu_bp_inst_mask_f2, // tell ic which valids to kill because of a taken branch, right justified
+
+&Force dangle ifu_bp_fghr_f2, // fetch ghr
+
+`ifdef RV_BTB_48
+&Force dangle ifu_bp_way_f2, // way
+`else
+&Force dangle ifu_bp_way_f2, // way
+`endif
+&Force dangle ifu_bp_ret_f2, // predicted ret
+&Force dangle ifu_bp_hist1_f2, // history counters for all 4 potential branches, bit 1, right justified
+&Force dangle ifu_bp_hist0_f2, // history counters for all 4 potential branches, bit 0, right justified
+&Force dangle ifu_bp_poffset_f2, // predicted target
+&Force dangle ifu_bp_pc4_f2, // pc4 indication, right justified
+&Force dangle ifu_bp_valid_f2, // branch valid, right justified
+
+&Force internal scan_mode
