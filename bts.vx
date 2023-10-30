@@ -1,0 +1,181 @@
+&Perl require "vperl/vperl_viva.pl";
+&Perl HEADER(2005);
+
+`include "NV_MSXXX_RV_global_config.vh"
+
+`timescale NV_TIMESCALE
+
+&Module;
+::mbist_connect -level sub;
+
+// -----------------------------------------------------------------------------
+// Description
+// -----------------------------------------------------------------------------
+// Branch Target Buffer
+
+// -----------------------------------------------------------------------------
+// Parameters
+// -----------------------------------------------------------------------------
+&Viva param_preserve_on;
+#include "NV_MSXXX_RV_param.vx"
+&Viva param_preserve_off;
+
+&Force internal /^unused_/;
+&Forget dangle  /^unused_/;
+
+// --------------------------------------------------------
+// Clock & Reset
+// --------------------------------------------------------
+input           clk;
+input           reset_;
+
+&Force input           clk;
+&Force input           reset_;
+
+&Viva width_learning_on;
+
+&Ports;
+&Wires;
+&Regs;
+
+// -----------------------------------------------------------------------------
+// 
+// -----------------------------------------------------------------------------
+&Force internal alu_ifu_bts_taken_ex1;
+&Force internal alu_ifu_bts_target_ex1x;
+&Force internal alu_ifu_bts_index_ex1x;
+&Force output ifu_bts_prdy;
+
+assign ifu_ib_wr_bts_ptr = ifu_pc_ifx[2:1];//only 1 entry at present
+//assign ifu_jalx_if = ifu_jmp_if | ifu_jmpr_if;
+
+assign {alu_ifu_bts_taken_ex1, alu_ifu_bts_target_ex1x[RV_PC_WIDTH-1:0], alu_ifu_bts_index_ex1x[0:0]} = alu_ifu_bts_update_pd_ex1x[RV_ALU_BTS_PD_EX1_WIDTH-1:0];
+
+assign ifu_alu_br_chk_pvld_ex1 = alu_ifu_bts_update_pvld_ex1;
+assign ifu_alu_br_chk_pd_ex1x[RV_IFU_ALU_BR_PD_WIDTH-1:0] = {ifu_alu_br_mispred_ex1, ifu_alu_br_target_ex1x, ifu_bts_pc_inc_nnx, ifu_bts_ras_winst_nn, ifu_bts_ras_rinst_nn};
+
+assign ifu_bts_brc_pc_in_nnx =  ::unique_mux(
+        width = RV_PC_WIDTH,
+        unique = 0,
+        ifu_brc_taken_if => ifu_pc_inc_ifx,
+        ifu_brc_if       => ifu_pc_jb_taken_ifx
+);
+
+&Vector RV_PC_WIDTH /^ifu_bts_brc_pc(\w+)x/;
+&Vector RV_PC_WIDTH /^ifu_pc(\w+)x/;
+
+assign ifu_rcu_bts_pvld_id                 = ifu_bts_vld_nn & ~ifu_bts_brc_vld_nn;
+assign ifu_rcu_bts_mispred_id              = 1'b0;
+assign ifu_rcu_bts_taken_id                = 1'b1;
+assign ifu_rcu_bts_call_inst_id            = ifu_bts_ras_winst_nn;
+assign ifu_rcu_bts_ret_inst_id             = ifu_bts_ras_rinst_nn;
+assign ifu_rcu_bts_target_idx              = ifu_bts_pc_nnx;
+::pack(::eval($ifu_rcu_br_if), ifu_rcu_bts_+_id, ifu_rcu_bts_pd_idx)
+
+assign ifu_rcu_br_retire_pvld_ret       = rcu_ifu_retire_pvld_ret;
+assign ifu_rcu_br_retire_mispred_ret    = (alu_ifu_bts_target_ex1x != ifu_bts_pc_nnx) | alu_ifu_bts_taken_ex1;
+assign ifu_rcu_br_retire_call_inst_ret  = ifu_bts_ras_winst_nn;
+assign ifu_rcu_br_retire_ret_inst_ret   = ifu_bts_ras_rinst_nn;
+assign ifu_rcu_br_retire_taken_ret      = alu_ifu_bts_target_ex1x;
+assign ifu_rcu_br_retire_target_retx[RV_PC_WIDTH-1:0] = ifu_rcu_br_retire_mispred_ret ? alu_ifu_bts_target_ex1x : ifu_bts_pc_nnx;
+::pack(::eval($ifu_rcu_br_if), ifu_rcu_br_retire_+_ret, ifu_rcu_br_retire_pd_retx[RV_IFU_RCU_BR_PD_WIDTH-1:0])
+
+// 1 entry BTS, the same as retire_target
+assign ifu_rcu_br_resteer_pvld_ex2       = ifu_bts_vld_nn;
+assign ifu_rcu_br_resteer_mispred_ex2    = ifu_rcu_br_retire_mispred_ret;
+assign ifu_rcu_br_resteer_taken_ex2      = ifu_rcu_br_retire_taken_ret;
+assign ifu_rcu_br_resteer_call_inst_ex2  = ifu_bts_ras_winst_nn;
+assign ifu_rcu_br_resteer_ret_inst_ex2   = ifu_bts_ras_rinst_nn;
+assign ifu_rcu_br_resteer_target_ex2x[RV_PC_WIDTH-1:0] = ifu_rcu_br_retire_target_retx;
+::pack(::eval($ifu_rcu_br_if), ifu_rcu_br_resteer_+_ex2, ifu_rcu_br_resteer_pd_ex2x[RV_IFU_RCU_BR_PD_WIDTH-1:0])
+
+assign unused_rcu_ifu_bts_pd_idx[RV_IFU_BTS_REAL_PTR_WIDTH-1:0] = rcu_ifu_bts_pd_idx[RV_IFU_BTS_REAL_PTR_WIDTH-1:0];
+assign unused_rcu_ifu_bts_pvld_id = rcu_ifu_bts_pvld_id;
+
+//assign unused_ifu_pc_bts_pc_in_nnx = ::unique_mux(
+//        width = RV_PC_WIDTH,
+//        unique = 1,
+//        ifu_jmpr_if => ifu_pc_inc_ifx,
+//        ifu_jmp_if  => ifu_pc_jb_taken_ifx,
+//        ifu_brc_if  => ifu_bts_brc_pc_in_nnx,
+//        );
+
+//assign ifu_pc_bts_pc_in_nnx = ifu_pc_jb_taken_ifx;
+
+assign ifu_bts_prdy = (~ifu_bts_vld_nn | ifu_bts_pop_nn | ~ifu_bts_update_if) & ~bts_rand_stall;
+
+assign ifu_bts_pop_nn = ifu_bts_flush_nn | rcu_ifu_retire_pvld_ret;// | alu_ifu_bts_update_pvld_ex1;
+
+//&Vector 32 ifu_bht_flush_tgt_imm_ifx;
+//&Vector 20 ifu_bts_imm_nnx;
+//&Vector 32 ifu_bts_pc_inc_nnx;
+// spyglass disable_block W484
+// spyglass disable_block W164a
+a//ssign ifu_bts_pc_inc_nnx = ifu_bts_pc_nnx + ~{{RV_PC_WIDTH-20{ifu_bts_imm_nnx[19]}}, ifu_bts_imm_nnx, 1'b0} + 1'b1 + ifu_bts_inc_num_nnx;
+// spyglass enable_block W484
+// spyglass enable_block W164a
+//assign ifu_bts_inc_num_nnx = ifu_bts_inst16_nn ? 32'h2 : 32'h4;
+
+assign ifu_alu_br_target_ex1x = ifu_alu_br_mispred_ex1 ? alu_ifu_bts_target_ex1x : ifu_bts_pc_nnx;
+assign ifu_alu_br_mispred_ex1 = (alu_ifu_bts_target_ex1x != ifu_bts_pc_nnx) | alu_ifu_bts_taken_ex1;
+
+&Always posedge;
+    if(ifu_bts_wr_pvld & ifu_bts_prdy)begin
+        ifu_bts_vld_nn       <0= 1'b1;
+        ifu_bts_jmp_vld_nn   <0= ifu_jmp_if;
+        ifu_bts_brc_vld_nn   <0= ifu_brc_if;
+        ifu_bts_p_taken_nn   <0= ifu_brc_taken_if | ifu_jmp_if;
+        ifu_bts_a_taken_nn   <0= ifu_brc_taken_if | ifu_jmp_if;
+        ifu_bts_pc_nnx       <0= ifu_pc_bts_pc_in_nnx;
+        ifu_bts_imm_nnx      <0= ifu_bht_flush_tgt_imm_ifx[20:1];
+        ifu_bts_inst16_nn    <0= ifu_cur_inst_16_if;
+        ifu_bts_insttype_nnx <0= ifu_bts_insttype_ifx[2:0];
+    end else if(alu_ifu_bts_update_pvld_ex1)begin
+        if(~(ifu_bts_jmp_vld_nn | ifu_bts_brc_vld_nn))
+            ifu_bts_pc_nnx       <0=  alu_ifu_bts_target_ex1x;
+        if(~ifu_bts_jmp_vld_nn & ifu_alu_br_mispred_ex1)
+            ifu_bts_a_taken_nn   <0= alu_ifu_bts_taken_ex1;
+    end else if(ifu_bts_pop_nn)
+        ifu_bts_vld_nn       <0= 1'b0;
+&End;
+
+&Always posedge;
+    if(ifu_bts_wr_pvld & ifu_bts_prdy)begin
+        ifu_bts_vld_nn       <0= 1'b1;
+        ifu_bts_fghr         <0= ifu_bp_fghr_f2;
+        ifu_bts_way          <0= ifu_bp_way_f2[3:0];
+        ifu_bts_ret          <0= ifu_bp_ret_f2[3:0];
+        ifu_bts_hist1        <0= ifu_bp_hist1_f2[3:0];
+        ifu_bts_hist0        <0= ifu_bp_hist0_f2[3:0];
+        ifu_bts_poffset      <0= ifu_bp_poffset_f2;
+        ifu_bts_pc4          <0= ifu_bp_pc4_f2[3:0];
+        ifu_bts_bpvalid      <0= ifu_bp_valid_f2[3:0];
+        ifu_bts_pc_nnx       <0= {ifu_bp_btb_target_f2,1'b0};
+    end  else if(ifu_bts_pop_nn)
+        ifu_bts_vld_nn       <0= 1'b0;
+
+
+
+assign ifu_bts_ras_winst_nn =  (ifu_bts_insttype_nnx==RV_IFU_BTS_J_RASW_INST) | (ifu_bts_insttype_nnx==RV_IFU_BTS_JALR_RASW_INST);
+assign ifu_bts_ras_rinst_nn =  (ifu_bts_insttype_nnx==RV_IFU_BTS_RAS_RINST);
+
+assign ifu_prof_bts_stall_if3 = ~ifu_bts_prdy;
+
+assign rob_ifu_rs1_zero_ret = 1'b0;
+assign ifu_prof_j_nn    = rcu_ifu_retire_pvld_ret & (ifu_bts_insttype_nnx==RV_IFU_BTS_J_NORASW_INST ) & rob_ifu_rs1_zero_ret;
+assign ifu_prof_jal_nn  = rcu_ifu_retire_pvld_ret & (ifu_bts_insttype_nnx==RV_IFU_BTS_J_RASW_INST   );
+assign ifu_prof_jr_nn   = rcu_ifu_retire_pvld_ret & (ifu_bts_insttype_nnx==RV_IFU_BTS_JALR_RASW_INST) & rob_ifu_rs1_zero_ret;
+assign ifu_prof_jalr_nn = rcu_ifu_retire_pvld_ret & (ifu_bts_insttype_nnx==RV_IFU_BTS_BHT_INST      );
+assign ifu_prof_ret_nn  = rcu_ifu_retire_pvld_ret & (ifu_bts_insttype_nnx==RV_IFU_BTS_RAS_RINST     );
+assign ifu_prof_b_nn    = rcu_ifu_retire_pvld_ret & (ifu_bts_insttype_nnx==RV_IFU_BTS_OTHER_INST    );
+
+// -----------------------------------------------------------------------------
+// Random Stall
+// -----------------------------------------------------------------------------
+&Instance NV_MSXXX_RVlib_randstall_bts zzz_randstall_bts;
+
+&Viva width_learning_off;
+
+&EndModule;
+
+::gen_randstall("-module NV_MSXXX_RVlib_randstall_bts -signal bts")
